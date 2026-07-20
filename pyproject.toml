@@ -1,0 +1,44 @@
+[build-system]
+requires = ["setuptools>=70", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "firevision-case-study"
+version = "0.1.0"
+description = "Fire and smoke detection computer-vision case study"
+requires-python = ">=3.10"
+dependencies = [
+  "numpy>=2.0,<3.0",
+  "opencv-python>=4.10,<5.0",
+  "PyYAML>=6.0,<7.0",
+  "tqdm>=4.66,<5.0",
+]
+
+[project.optional-dependencies]
+classical = [
+  "scikit-image>=0.25,<0.27",
+  "scikit-learn>=1.5,<2.0",
+  "joblib>=1.4,<2.0",
+  "matplotlib>=3.8,<4.0"
+]
+detector = [
+  "torch>=2.2,<3.0",
+  "torchvision>=0.17,<1.0",
+  "ultralytics>=8.3,<9.0",
+  "Pillow>=10.0,<13.0"
+]
+video = [
+  "firevision-case-study[detector]",
+  "scipy>=1.11,<2.0"
+]
+
+[dependency-groups]
+dev = [
+  "pytest>=8.0,<9.0"
+]
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
