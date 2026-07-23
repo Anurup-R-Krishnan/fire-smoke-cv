@@ -1,0 +1,55 @@
+project_root: .
+seed: 42
+
+classes:
+  0: fire
+  1: smoke
+
+# Add one entry for every image/annotation directory pair you download.
+# Paths may be absolute or relative to project_root.
+sources:
+  - name: dfire
+    format: yolo
+    images_dir: data/raw/dfire/images
+    labels_dir: data/raw/dfire/labels
+    class_map:
+      0: 0
+      1: 1
+    missing_label_is_negative: true
+
+  # Uncomment after downloading DFS and arranging its VOC XML files.
+  # - name: dfs
+  #   format: voc
+  #   images_dir: data/raw/dfs/images
+  #   labels_dir: data/raw/dfs/annotations
+  #   class_map:
+  #     fire: 0
+  #     smoke: 1
+  #   missing_label_is_negative: false
+
+validation:
+  min_width: 32
+  min_height: 32
+  repair_out_of_bounds_boxes: true
+  drop_unknown_classes: true
+  drop_tiny_boxes_pixels: 4
+
+# Exact duplicates are removed. Near duplicates are not deleted; they are grouped
+# so that visually similar copies cannot leak across train/val/test.
+deduplication:
+  exact_duplicates: true
+  perceptual_hash: true
+  phash_hamming_threshold: 4
+
+split:
+  train: 0.70
+  val: 0.15
+  test: 0.15
+  stratify_by: class_signature
+
+output:
+  dataset_dir: data/processed/fire_smoke
+  report_dir: reports/data
+  transfer_mode: hardlink  # hardlink, copy, or symlink
+  overwrite: true
+  preview_samples: 24
