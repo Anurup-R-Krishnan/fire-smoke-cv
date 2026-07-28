@@ -1,0 +1,91 @@
+project_root: .
+seed: 42
+
+# Output created by Data Prep.
+dataset_dir: data/processed/fire_smoke
+
+classes:
+  0: fire
+  1: smoke
+
+patches:
+  size: 96
+  context: 0.12
+  jpeg_quality: 95
+  min_box_pixels: 12
+
+  # Normal patches come from empty images and, where possible, areas that do not
+  # overlap fire/smoke boxes. Keep this low because RBF-SVM training scales poorly.
+  normal_per_negative_image: 1
+  normal_per_positive_image: 1
+  normal_crop_min_fraction: 0.35
+  normal_crop_max_fraction: 0.75
+  normal_max_iou: 0.02
+
+  # Laptop-safe caps. Every patch keeps the Data Prep split of its source image.
+  max_per_class:
+    train:
+      fire: 1500
+      smoke: 1500
+      normal: 1500
+    val:
+      fire: 400
+      smoke: 400
+      normal: 400
+    test:
+      fire: 600
+      smoke: 600
+      normal: 600
+
+colour_baseline:
+  gaussian_kernel: 3
+  morphology_kernel: 3
+  opening_iterations: 1
+  closing_iterations: 1
+  pixel_samples_per_image: 512
+  maximum_pixels_per_class: 250000
+
+  # Seven boolean pixel rules are computed for each class. Requiring a majority
+  # is more robust than making every rule compulsory.
+  fire_vote_threshold: 4
+  smoke_vote_threshold: 5
+
+  # Tuned only on the validation patches. The test set is untouched.
+  area_grid_fire: [0.005, 0.01, 0.02, 0.04, 0.08]
+  area_grid_smoke: [0.01, 0.02, 0.04, 0.08, 0.12]
+
+features:
+  image_size: 96
+  hog_orientations: 9
+  hog_pixels_per_cell: [8, 8]
+  hog_cells_per_block: [2, 2]
+  lbp_points: 8
+  lbp_radius: 1
+  histogram_bins: 16
+  include_contour_statistics: true
+
+svm:
+  # Two validation trials keep Classical ML realistic on a laptop CPU.
+  c_values: [1.0, 10.0]
+  gamma_values: [scale]
+  cache_size_mb: 2048
+  max_iter: -1
+  probability: false
+
+motion:
+  mog2_history: 300
+  mog2_var_threshold: 16.0
+  mog2_detect_shadows: false
+  farneback_pyr_scale: 0.5
+  farneback_levels: 3
+  farneback_winsize: 15
+  farneback_iterations: 3
+  farneback_poly_n: 5
+  farneback_poly_sigma: 1.2
+  moving_magnitude_threshold: 1.0
+
+output:
+  patch_dir: data/interim/classical_patches
+  report_dir: reports/classical
+  artifact_dir: artifacts/classical
+  overwrite: true
