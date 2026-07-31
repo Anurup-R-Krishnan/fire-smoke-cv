@@ -1,0 +1,71 @@
+project_root: .
+seed: 42
+device: auto
+
+# Produced by Data Prep.
+detection_dataset_yaml: data/data.yaml
+
+# Produced by Classical ML.
+classification_patch_dir: data/interim/classical_patches
+
+# The order is explicit and must not be inferred alphabetically from folder names.
+classifier_classes: [fire, smoke, normal]
+detector_classes:
+  0: fire
+  1: smoke
+
+classifier:
+  image_size: 224
+  num_workers: 2
+  weight_decay: 0.0001
+  label_smoothing: 0.05
+  patience: 5
+  amp: true
+
+  models:
+    mobilenet_v3_small:
+      enabled: true
+      pretrained: true
+      batch_size: 32
+      stage1_epochs: 8
+      stage2_epochs: 12
+      unfreeze_last_blocks: 3
+      head_learning_rate: 0.001
+      finetune_learning_rate: 0.0001
+
+    # Implemented for the syllabus comparison, but disabled by default because
+    # VGG16 is slow and memory-heavy on a 4 GB RTX 3050 Ti.
+    vgg16:
+      enabled: false
+      pretrained: true
+      batch_size: 8
+      stage1_epochs: 5
+      stage2_epochs: 5
+      unfreeze_last_blocks: 5
+      head_learning_rate: 0.0005
+      finetune_learning_rate: 0.00005
+
+detector:
+  base_model: yolo11n.pt
+  image_sizes: [512, 640]
+  epochs: 3
+  batch_size: 8
+  workers: 2
+  patience: 8
+  amp: true
+  cache: false
+  optimizer: AdamW
+  learning_rate: auto
+  weight_decay: 0.0005
+  close_mosaic: 5
+
+  # Tuned on validation only after selecting the input size.
+  confidence_grid: [0.15, 0.20, 0.25, 0.30]
+  iou_grid: [0.45, 0.55]
+  max_det: 100
+
+output:
+  artifact_dir: artifacts/detector
+  report_dir: reports/detector
+  yolo_project_dir: artifacts/detector/yolo_runs
+  overwrite: true
