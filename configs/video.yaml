@@ -1,0 +1,76 @@
+project_root: .
+device: auto
+
+camera:
+  # Enable only for footage captured with the calibrated camera.
+  undistort: false
+  calibration_file: artifacts/calibration/camera_calibration.npz
+
+model:
+  checkpoint: artifacts/detector/best_fire_smoke_detector.pt
+  thresholds: artifacts/detector/detector_thresholds.json
+  fallback_image_size: 640
+  fallback_confidence: 0.25
+  fallback_iou: 0.45
+  max_det: 100
+
+tracker:
+  minimum_iou: 0.20
+  max_age: 8
+  minimum_hits: 2
+  process_noise: 0.01
+  measurement_noise: 0.10
+  initial_covariance: 10.0
+
+# Voting is performed independently for each tracked region.
+temporal:
+  window_size: 8
+  fire_minimum_hits: 3
+  smoke_minimum_hits: 4
+  confidence_alpha: 0.40
+  minimum_confirmed_confidence: 0.25
+
+motion:
+  enabled: true
+  magnitude_threshold: 1.0
+  magnitude_clip: 5.0
+  farneback:
+    pyr_scale: 0.5
+    levels: 3
+    winsize: 15
+    iterations: 3
+    poly_n: 5
+    poly_sigma: 1.2
+  mog2:
+    enabled_for_fixed_camera: true
+    history: 300
+    variance_threshold: 16.0
+    learning_rate: -1.0
+
+risk:
+  weights:
+    confidence: 0.35
+    persistence: 0.20
+    motion: 0.15
+    area: 0.15
+    growth: 0.15
+  area_saturation_ratio: 0.15
+  growth_saturation_ratio: 0.50
+  moderate_threshold: 0.30
+  high_threshold: 0.60
+  critical_threshold: 0.80
+
+video:
+  output_codec: mp4v
+  fallback_fps: 25.0
+  display_scale: 1.0
+  draw_motion_vector: true
+  draw_track_trail: true
+  trail_length: 20
+
+output:
+  report_dir: reports/video
+  default_video: reports/video/annotated_video.mp4
+  frame_log: reports/video/frame_evidence.csv
+  event_log: reports/video/events.csv
+  summary: reports/video/summary.json
