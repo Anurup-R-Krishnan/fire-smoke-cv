@@ -1,26 +1,53 @@
 #!/bin/bash
-set -e
+set -eo pipefail
 
-echo "🚀 Bootstrapping FireSmoke CV Project for Remote GPU Environment..."
-
-# 1. Install uv if not already installed
-if ! command -v uv &> /dev/null; then
-    echo "📦 Installing 'uv' package manager..."
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    source $HOME/.cargo/env
+# 1. Error Handling & Prerequisites
+if [ -z "$KAGGLE_USERNAME" ] || [ -z "$KAGGLE_KEY" ]; then
+    echo "ERROR: Missing Kaggle credentials."
+    echo "Please set them before running this script:"
+    echo "  export KAGGLE_USERNAME=\"your_username\""
+    echo "  export KAGGLE_KEY=\"your_api_key\""
+    exit 1
 fi
 
-# 2. Install dependencies (assuming we are already in the repo directory)
-echo "🐍 Installing Python dependencies..."
-uv pip install --system -e ".[detector]"
+echo "Starting Remote Setup for Lightning AI..."
 
-# 3. Create required data directory structures
-echo "📁 Setting up data directories..."
-mkdir -p data/raw data/interim data/processed/fire_smoke
+# 2. System Dependencies
+echo "Installing system dependencies for OpenCV/YOLO..."
+sudo apt-get update -qq
+sudo apt-get install -y -qq libgl1 libglib2.0-0 unzip
 
-echo "✅ Setup complete! You are ready to start training."
-echo ""
-echo "🔥 NEXT STEPS:"
-echo "1. Upload your dataset or download it via Kaggle API to a folder (e.g., /teamspace/studios/this_studio/dfire-yolo)"
-echo "2. Symlink the dataset: ln -s /path/to/downloaded/dataset data/processed/fire_smoke"
-echo "3. Run training: python scripts/run_detector_pipeline.py --config configs/default.yaml"
+# 3. Install uv
+if ! command -v uv &> /dev/null; then
+    echo "Installing uv..."
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    source $HOME/.local/bin/env
+else
+    echo "uv is already installed."
+fi
+
+# 4. Install Kaggle CLI
+echo "Installing Kaggle CLI..."
+# Using uv to install globally on the system python
+uv pip install --system kaggle
+
+# 5. Download and extract Dataset
+echo "Downloading D-Fire Dataset..."
+mkdir -p data/raw/dfire
+# The -p flag sets the download path
+kaggle datasets download -d alxmamaev/dfire-yolo -p data/raw/dfire
+
+echo "Unzipping dataset..."
+unzip -q data/raw/dfire/dfire-yolo.zip -d data/raw/dfire/
+rm data/raw/dfire/dfire-yolo.zip
+
+# Create Symlinks so the default config works out of the box
+echo "Setting up dataset symlinks..."
+mkdir -p data/processed
+ln -sfn ../../raw/dfire data/processed/fire_smoke
+
+# 6. Install Project Dependencies
+echo "Installing FireSmoke project dependencies..."
+uv pip install --system -e ".[detector,video]"
+
+echo "Setup Complete! You can now run Phase 2 training."
