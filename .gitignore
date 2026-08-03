@@ -1,3 +1,4 @@
+# Environments and IDEs
 .venv/
 .uv/
 __pycache__/
@@ -7,20 +8,26 @@ __pycache__/
 .vscode/
 .DS_Store
 
-# Large datasets and generated artifacts
-data/raw/**
-data/interim/**
-data/processed/**
-data/train/**
-data/test/**
-reports/**
-artifacts/**
+# User notes/docs
+docs/superpowers/
+
+# Datasets (ignore all data except the YOLO dataset definition)
+data/*
+!data/data.yaml
+
+# Generated artifacts, reports, and Ultralytics YOLO runs
+artifacts/
+reports/
+runs/
+yolov8n.pt
+yolo11n.pt
 
 # Model weights
 *.pt
 *.onnx
 *.npz
 *.joblib
+*.engine
 
 # Egg info
 src/*.egg-info/
