@@ -12,7 +12,6 @@ __pycache__/
 docs/superpowers/
 
 # Datasets
-# Ignore everything in the data folder EXCEPT data.yaml
 data/*
 !data/data.yaml
 
