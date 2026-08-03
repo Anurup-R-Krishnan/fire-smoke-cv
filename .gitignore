@@ -11,7 +11,8 @@ __pycache__/
 # User notes/docs
 docs/superpowers/
 
-# Datasets (ignore all data except the YOLO dataset definition)
+# Datasets
+# Ignore everything in the data folder EXCEPT data.yaml
 data/*
 !data/data.yaml
 
@@ -22,7 +23,7 @@ runs/
 yolov8n.pt
 yolo11n.pt
 
-# Model weights
+# Model weights and artifacts
 *.pt
 *.onnx
 *.npz
