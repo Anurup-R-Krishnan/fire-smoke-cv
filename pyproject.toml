@@ -34,7 +34,8 @@ video = [
 
 [dependency-groups]
 dev = [
-  "pytest>=8.0,<9.0"
+  "pytest>=8.0,<9.0",
+  "ruff>=0.4,<1.0"
 ]
 
 [tool.setuptools]

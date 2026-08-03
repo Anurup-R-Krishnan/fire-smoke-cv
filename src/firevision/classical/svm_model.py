@@ -9,6 +9,7 @@ import numpy as np
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC
+from sklearn.calibration import CalibratedClassifierCV
 
 from .config import ClassicalMLConfig
 from .evaluate import classification_metrics
@@ -16,23 +17,25 @@ from .features import load_feature_archive
 
 
 def _build_model(config: ClassicalMLConfig, c_value: float, gamma: str | float) -> Pipeline:
+    base_svm = SVC(
+        C=c_value,
+        gamma=gamma,
+        kernel="rbf",
+        class_weight="balanced",
+        cache_size=config.svm.cache_size_mb,
+        max_iter=config.svm.max_iter,
+        decision_function_shape="ovr",
+        random_state=config.seed,
+    )
+    if config.svm.probability:
+        svm = CalibratedClassifierCV(base_svm, ensemble=False)
+    else:
+        svm = base_svm
+
     return Pipeline(
         [
             ("scale", StandardScaler()),
-            (
-                "svm",
-                SVC(
-                    C=c_value,
-                    gamma=gamma,
-                    kernel="rbf",
-                    class_weight="balanced",
-                    probability=config.svm.probability,
-                    cache_size=config.svm.cache_size_mb,
-                    max_iter=config.svm.max_iter,
-                    decision_function_shape="ovr",
-                    random_state=config.seed,
-                ),
-            ),
+            ("svm", svm),
         ]
     )
 
