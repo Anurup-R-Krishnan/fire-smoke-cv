@@ -40,11 +40,7 @@ uv pip install kaggle
 # 6. Download and extract Dataset
 echo "Downloading D-Fire Dataset..."
 mkdir -p data/raw/dfire
-kaggle datasets download -d alxmamaev/dfire-yolo -p data/raw/dfire
-
-echo "Unzipping dataset..."
-unzip -q data/raw/dfire/dfire-yolo.zip -d data/raw/dfire/
-rm data/raw/dfire/dfire-yolo.zip
+kaggle datasets download -d sayedgamal99/smoke-fire-detection-yolo -p data/raw/dfire --unzip
 
 # Create Symlinks so the default config works out of the box
 echo "Setting up dataset symlinks..."
