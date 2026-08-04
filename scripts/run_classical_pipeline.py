@@ -20,11 +20,13 @@ def main() -> None:
     args = parser.parse_args()
     summary = run_pipeline(load_config(PROJECT_ROOT / args.config))
     compact = {
-        "patch_counts": summary["patch_counts"],
-        "classical_test_macro_f1": summary["classical_test"]["macro_f1"],
-        "svm_test_macro_f1": summary["svm_test"]["macro_f1"],
-        "svm_best_parameters": summary["svm_training"]["best_parameters"],
+        "patch_counts": summary.get("patch_counts"),
+        "classical_test_macro_f1": summary.get("classical_test", {}).get("macro_f1"),
     }
+    ml_trainings = summary.get("ml_trainings", {})
+    if "svm" in ml_trainings:
+        compact["svm_best_parameters"] = ml_trainings["svm"].get("best_parameters")
+        compact["svm_val_macro_f1"] = ml_trainings["svm"].get("best_validation_macro_f1")
     print(json.dumps(compact, indent=2))
 
 
