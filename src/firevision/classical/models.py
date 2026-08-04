@@ -26,12 +26,12 @@ def _build_svm_model(config: ClassicalMLConfig, c_value: float, gamma: str | flo
         gamma=gamma,
         kernel="rbf",
         class_weight="balanced",
-        cache_size=config.svm.cache_size_mb,
-        max_iter=config.svm.max_iter,
+        cache_size=config.ml_model.svm.cache_size_mb,
+        max_iter=config.ml_model.svm.max_iter,
         decision_function_shape="ovr",
         random_state=config.seed,
     )
-    if config.svm.probability:
+    if config.ml_model.svm.probability:
         svm = CalibratedClassifierCV(base_svm, ensemble=False)
     else:
         svm = base_svm
