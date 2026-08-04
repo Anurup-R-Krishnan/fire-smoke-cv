@@ -225,6 +225,7 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
     _clean_outputs(config)
     records = prepare_patch_dataset(config)
     counts = _patch_counts(records)
+    eval_split = "val" if any(r.split == "val" for r in records) else "test"
     for split, split_counts in counts.items():
         total = sum(split_counts.values())
         if total == 0:
@@ -243,7 +244,7 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
 
     classical_val, classical_val_true, classical_val_pred = evaluate_classical_records(
         records,
-        "val",
+        eval_split,
         tuned_thresholds,
         config,
         config.output.report_dir / "classical_val_predictions.csv",
@@ -272,7 +273,7 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
         "Classical baseline failures",
     )
 
-    for split in ("train", "val", "test"):
+    for split in ("train", eval_split, "test"):
         extract_split_features(records, split, config)
     
     if config.ml_model.train_all:
@@ -297,7 +298,7 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
         ml_model, ml_training = train_func(config)
         ml_trainings[short_name] = ml_training
         
-        ml_val, ml_val_true, ml_val_pred, ml_val_paths = evaluate_model(ml_model, config, "val")
+        ml_val, ml_val_true, ml_val_pred, ml_val_paths = evaluate_model(ml_model, config, eval_split)
         ml_test, ml_test_true, ml_test_pred, ml_test_paths = evaluate_model(ml_model, config, "test")
         
         save_metrics(ml_val, config.output.report_dir / f"{short_name}_val_metrics.json")
