@@ -1,0 +1,65 @@
+{
+  "model_path": "/home/zeus/fire-smoke-cv/artifacts/classical/et_model.joblib",
+  "best_parameters": {
+    "n_estimators": 200,
+    "max_depth": null
+  },
+  "best_validation_macro_f1": 0.8545061857262861,
+  "best_validation_accuracy": 0.8544444444444445,
+  "trials": [
+    {
+      "n_estimators": 50,
+      "max_depth": 10,
+      "macro_f1": 0.825636053708346,
+      "accuracy": 0.8261111111111111
+    },
+    {
+      "n_estimators": 50,
+      "max_depth": 20,
+      "macro_f1": 0.849277021258927,
+      "accuracy": 0.8494444444444444
+    },
+    {
+      "n_estimators": 50,
+      "max_depth": null,
+      "macro_f1": 0.8498106687050114,
+      "accuracy": 0.85
+    },
+    {
+      "n_estimators": 100,
+      "max_depth": 10,
+      "macro_f1": 0.8210544319442757,
+      "accuracy": 0.8216666666666667
+    },
+    {
+      "n_estimators": 100,
+      "max_depth": 20,
+      "macro_f1": 0.8521613471351802,
+      "accuracy": 0.8522222222222222
+    },
+    {
+      "n_estimators": 100,
+      "max_depth": null,
+      "macro_f1": 0.8539223586502859,
+      "accuracy": 0.8538888888888889
+    },
+    {
+      "n_estimators": 200,
+      "max_depth": 10,
+      "macro_f1": 0.8248993188805466,
+      "accuracy": 0.8255555555555556
+    },
+    {
+      "n_estimators": 200,
+      "max_depth": 20,
+      "macro_f1": 0.8527020796258201,
+      "accuracy": 0.8527777777777777
+    },
+    {
+      "n_estimators": 200,
+      "max_depth": null,
+      "macro_f1": 0.8545061857262861,
+      "accuracy": 0.8544444444444445
+    }
+  ]
+}

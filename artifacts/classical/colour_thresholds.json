@@ -1,0 +1,24 @@
+{
+  "fire": {
+    "red_minus_green_min": 0.0,
+    "green_minus_blue_min": -5.0,
+    "saturation_min": 35.0,
+    "value_min": 70.0,
+    "cr_min": 135.0,
+    "cb_max": 137.0,
+    "hue_max": 60.0
+  },
+  "smoke": {
+    "saturation_max": 125.0,
+    "value_min": 35.0,
+    "value_max": 255.0,
+    "cr_deviation_max": 43.0,
+    "cb_deviation_max": 38.0,
+    "red_green_difference_max": 65.0,
+    "green_blue_difference_max": 51.0
+  },
+  "fire_vote_threshold": 4,
+  "smoke_vote_threshold": 5,
+  "fire_area_threshold": 0.005,
+  "smoke_area_threshold": 0.12
+}

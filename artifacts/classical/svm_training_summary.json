@@ -1,0 +1,23 @@
+{
+  "model_path": "/home/zeus/fire-smoke-cv/artifacts/classical/hog_lbp_colour_rbf_svm.joblib",
+  "best_parameters": {
+    "C": 10.0,
+    "gamma": "scale"
+  },
+  "best_validation_macro_f1": 0.887886916899422,
+  "best_validation_accuracy": 0.8877777777777778,
+  "trials": [
+    {
+      "C": 1.0,
+      "gamma": "scale",
+      "macro_f1": 0.8444601131105918,
+      "accuracy": 0.8444444444444444
+    },
+    {
+      "C": 10.0,
+      "gamma": "scale",
+      "macro_f1": 0.887886916899422,
+      "accuracy": 0.8877777777777778
+    }
+  ]
+}
