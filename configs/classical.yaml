@@ -78,7 +78,7 @@ ml_model:
     gamma_values: [scale]
     cache_size_mb: 2048
     max_iter: -1
-    probability: false
+    probability: true
   random_forest:
     n_estimators_values: [50, 100, 200]
     max_depth_values: [10, 20, null]

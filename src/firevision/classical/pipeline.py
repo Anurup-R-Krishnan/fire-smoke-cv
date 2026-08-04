@@ -28,6 +28,7 @@ from .models import (
     train_and_select_xgboost,
     train_and_select_lightgbm,
 )
+from .plotting import generate_comparison_charts
 
 
 def _clean_outputs(config: ClassicalMLConfig) -> None:
@@ -278,8 +279,8 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
     
     if config.ml_model.train_all:
         models_to_train = [
-            ("svm", "HOG+LBP+colour RBF-SVM", train_and_select_svm),
-            ("rf", "LBP+GLCM+Contours Random Forest", train_and_select_rf),
+            ("svm", "SVM", train_and_select_svm),
+            ("rf", "Random Forest", train_and_select_rf),
             ("et", "Extra Trees", train_and_select_extra_trees),
             ("xgb", "XGBoost", train_and_select_xgboost),
             ("lgbm", "LightGBM", train_and_select_lightgbm),
@@ -287,9 +288,9 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
     else:
         model_type = config.ml_model.type
         if model_type == "random_forest":
-            models_to_train = [("rf", "LBP+GLCM+Contours Random Forest", train_and_select_rf)]
+            models_to_train = [("rf", "Random Forest", train_and_select_rf)]
         else:
-            models_to_train = [("svm", "HOG+LBP+colour RBF-SVM", train_and_select_svm)]
+            models_to_train = [("svm", "SVM", train_and_select_svm)]
 
     ml_metrics_list = []
     ml_trainings = {}
@@ -298,8 +299,19 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
         ml_model, ml_training = train_func(config, eval_split)
         ml_trainings[short_name] = ml_training
         
-        ml_val, ml_val_true, ml_val_pred, ml_val_paths = evaluate_model(ml_model, config, eval_split)
-        ml_test, ml_test_true, ml_test_pred, ml_test_paths = evaluate_model(ml_model, config, "test")
+        ml_val, ml_val_true, ml_val_pred, ml_val_paths, ml_val_proba = evaluate_model(ml_model, config, eval_split)
+        ml_test, ml_test_true, ml_test_pred, ml_test_paths, ml_test_proba = evaluate_model(ml_model, config, "test")
+        
+        ml_metrics_list.append((ml_name, ml_val, ml_test))
+        # Store for plotting later
+        if "plot_results" not in locals():
+            plot_results = []
+        plot_results.append({
+            "name": ml_name,
+            "y_true": ml_test_true,
+            "y_pred": ml_test_pred,
+            "y_proba": ml_test_proba,
+        })
         
         save_metrics(ml_val, config.output.report_dir / f"{short_name}_val_metrics.json")
         save_metrics(ml_test, config.output.report_dir / f"{short_name}_test_metrics.json")
@@ -344,4 +356,8 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
         json.dumps(summary, indent=2), encoding="utf-8"
     )
     _write_report(config, summary, comparison)
+    
+    if "plot_results" in locals():
+        generate_comparison_charts(config.output.report_dir, comparison_path, plot_results)
+        
     return summary

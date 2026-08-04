@@ -375,9 +375,17 @@ def evaluate_model(
     model: Pipeline,
     config: ClassicalMLConfig,
     split: str,
-) -> tuple[dict[str, object], np.ndarray, np.ndarray, np.ndarray]:
+) -> tuple[dict[str, object], np.ndarray, np.ndarray, np.ndarray, np.ndarray | None]:
     feature_path = config.output.artifact_dir / f"features_{split}.npz"
     X, y, paths = load_feature_archive(feature_path)
     predictions = model.predict(X)
+    
+    probabilities = None
+    if hasattr(model, "predict_proba"):
+        try:
+            probabilities = model.predict_proba(X)
+        except Exception:
+            pass
+            
     metrics = classification_metrics(y, predictions)
-    return metrics, y, predictions, paths
+    return metrics, y, predictions, paths, probabilities
