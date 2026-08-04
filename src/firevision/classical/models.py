@@ -92,9 +92,9 @@ def _build_lgbm_model(config: ClassicalMLConfig, n_estimators: int, max_depth: i
     return Pipeline([("scale", StandardScaler()), ("lgbm", lgbm)])
 
 
-def train_and_select_svm(config: ClassicalMLConfig) -> tuple[Pipeline, dict[str, object]]:
+def train_and_select_svm(config: ClassicalMLConfig, eval_split: str = "val") -> tuple[Pipeline, dict[str, object]]:
     train_path = config.output.artifact_dir / "features_train.npz"
-    val_path = config.output.artifact_dir / "features_val.npz"
+    val_path = config.output.artifact_dir / f"features_{eval_split}.npz"
     X_train, y_train, _ = load_feature_archive(train_path)
     X_val, y_val, _ = load_feature_archive(val_path)
 
@@ -147,9 +147,9 @@ def train_and_select_svm(config: ClassicalMLConfig) -> tuple[Pipeline, dict[str,
     return best_model, summary
 
 
-def train_and_select_rf(config: ClassicalMLConfig) -> tuple[Pipeline, dict[str, object]]:
+def train_and_select_rf(config: ClassicalMLConfig, eval_split: str = "val") -> tuple[Pipeline, dict[str, object]]:
     train_path = config.output.artifact_dir / "features_train.npz"
-    val_path = config.output.artifact_dir / "features_val.npz"
+    val_path = config.output.artifact_dir / f"features_{eval_split}.npz"
     X_train, y_train, _ = load_feature_archive(train_path)
     X_val, y_val, _ = load_feature_archive(val_path)
 
@@ -202,9 +202,9 @@ def train_and_select_rf(config: ClassicalMLConfig) -> tuple[Pipeline, dict[str, 
     return best_model, summary
 
 
-def train_and_select_extra_trees(config: ClassicalMLConfig) -> tuple[Pipeline, dict[str, object]]:
+def train_and_select_extra_trees(config: ClassicalMLConfig, eval_split: str = "val") -> tuple[Pipeline, dict[str, object]]:
     train_path = config.output.artifact_dir / "features_train.npz"
-    val_path = config.output.artifact_dir / "features_val.npz"
+    val_path = config.output.artifact_dir / f"features_{eval_split}.npz"
     X_train, y_train, _ = load_feature_archive(train_path)
     X_val, y_val, _ = load_feature_archive(val_path)
 
@@ -257,9 +257,9 @@ def train_and_select_extra_trees(config: ClassicalMLConfig) -> tuple[Pipeline, d
     return best_model, summary
 
 
-def train_and_select_xgboost(config: ClassicalMLConfig) -> tuple[Pipeline, dict[str, object]]:
+def train_and_select_xgboost(config: ClassicalMLConfig, eval_split: str = "val") -> tuple[Pipeline, dict[str, object]]:
     train_path = config.output.artifact_dir / "features_train.npz"
-    val_path = config.output.artifact_dir / "features_val.npz"
+    val_path = config.output.artifact_dir / f"features_{eval_split}.npz"
     X_train, y_train, _ = load_feature_archive(train_path)
     X_val, y_val, _ = load_feature_archive(val_path)
 
@@ -314,9 +314,9 @@ def train_and_select_xgboost(config: ClassicalMLConfig) -> tuple[Pipeline, dict[
     return best_model, summary
 
 
-def train_and_select_lightgbm(config: ClassicalMLConfig) -> tuple[Pipeline, dict[str, object]]:
+def train_and_select_lightgbm(config: ClassicalMLConfig, eval_split: str = "val") -> tuple[Pipeline, dict[str, object]]:
     train_path = config.output.artifact_dir / "features_train.npz"
-    val_path = config.output.artifact_dir / "features_val.npz"
+    val_path = config.output.artifact_dir / f"features_{eval_split}.npz"
     X_train, y_train, _ = load_feature_archive(train_path)
     X_val, y_val, _ = load_feature_archive(val_path)
 

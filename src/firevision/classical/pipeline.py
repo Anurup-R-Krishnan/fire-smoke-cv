@@ -295,7 +295,7 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
     ml_trainings = {}
     
     for short_name, ml_name, train_func in models_to_train:
-        ml_model, ml_training = train_func(config)
+        ml_model, ml_training = train_func(config, eval_split)
         ml_trainings[short_name] = ml_training
         
         ml_val, ml_val_true, ml_val_pred, ml_val_paths = evaluate_model(ml_model, config, eval_split)
