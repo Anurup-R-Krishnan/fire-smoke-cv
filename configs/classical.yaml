@@ -56,21 +56,43 @@ colour_baseline:
 
 features:
   image_size: 96
+  use_hog: false
+  use_lbp: true
+  use_colour: false
+  use_glcm: true
+  use_contours: true
   hog_orientations: 9
   hog_pixels_per_cell: [8, 8]
   hog_cells_per_block: [2, 2]
   lbp_points: 8
   lbp_radius: 1
+  glcm_distances: [1, 2]
+  glcm_angles: [0, 0.78539816, 1.57079633, 2.35619449]
   histogram_bins: 16
-  include_contour_statistics: true
 
-svm:
-  # Two validation trials keep Classical ML realistic on a laptop CPU.
-  c_values: [1.0, 10.0]
-  gamma_values: [scale]
-  cache_size_mb: 2048
-  max_iter: -1
-  probability: false
+ml_model:
+  train_all: true
+  type: random_forest
+  svm:
+    c_values: [1.0, 10.0]
+    gamma_values: [scale]
+    cache_size_mb: 2048
+    max_iter: -1
+    probability: false
+  random_forest:
+    n_estimators_values: [50, 100, 200]
+    max_depth_values: [10, 20, null]
+  extra_trees:
+    n_estimators_values: [50, 100, 200]
+    max_depth_values: [10, 20, null]
+  xgboost:
+    n_estimators_values: [50, 100, 200]
+    max_depth_values: [3, 6, 9]
+    learning_rate_values: [0.01, 0.1]
+  lightgbm:
+    n_estimators_values: [50, 100, 200]
+    max_depth_values: [3, 6, 9]
+    learning_rate_values: [0.01, 0.1]
 
 motion:
   mog2_history: 300

@@ -5,7 +5,7 @@ from pathlib import Path
 
 import cv2
 import numpy as np
-from skimage.feature import hog, local_binary_pattern
+from skimage.feature import hog, local_binary_pattern, graycomatrix, graycoprops
 
 from .config import FeatureConfig, ClassicalMLConfig
 from .contours import mask_region_statistics
@@ -51,46 +51,66 @@ def extract_handcrafted_features(image: np.ndarray, config: FeatureConfig) -> np
     hsv = cv2.cvtColor(resized, cv2.COLOR_BGR2HSV)
     ycrcb = cv2.cvtColor(resized, cv2.COLOR_BGR2YCrCb)
 
-    hog_features = hog(
-        gray,
-        orientations=config.hog_orientations,
-        pixels_per_cell=config.hog_pixels_per_cell,
-        cells_per_block=config.hog_cells_per_block,
-        block_norm="L2-Hys",
-        feature_vector=True,
-    ).astype(np.float32)
+    pieces = []
 
-    lbp = local_binary_pattern(
-        gray,
-        P=config.lbp_points,
-        R=config.lbp_radius,
-        method="uniform",
-    )
-    lbp_bins = config.lbp_points + 2
-    lbp_histogram, _ = np.histogram(lbp.ravel(), bins=lbp_bins, range=(0, lbp_bins))
-    lbp_histogram = lbp_histogram.astype(np.float32)
-    lbp_histogram /= max(1.0, float(lbp_histogram.sum()))
+    if config.use_hog:
+        hog_features = hog(
+            gray,
+            orientations=config.hog_orientations,
+            pixels_per_cell=config.hog_pixels_per_cell,
+            cells_per_block=config.hog_cells_per_block,
+            block_norm="L2-Hys",
+            feature_vector=True,
+        ).astype(np.float32)
+        pieces.append(hog_features)
 
-    colour_features: list[np.ndarray] = []
-    for channel_index, channel in enumerate(cv2.split(hsv)):
-        value_range = (0, 180) if channel_index == 0 else (0, 256)
-        colour_features.append(_normalised_histogram(channel, config.histogram_bins, value_range))
-    for channel in cv2.split(ycrcb):
-        colour_features.append(_normalised_histogram(channel, config.histogram_bins, (0, 256)))
+    if config.use_lbp:
+        lbp = local_binary_pattern(
+            gray,
+            P=config.lbp_points,
+            R=config.lbp_radius,
+            method="uniform",
+        )
+        lbp_bins = config.lbp_points + 2
+        lbp_histogram, _ = np.histogram(lbp.ravel(), bins=lbp_bins, range=(0, lbp_bins))
+        lbp_histogram = lbp_histogram.astype(np.float32)
+        lbp_histogram /= max(1.0, float(lbp_histogram.sum()))
+        pieces.append(lbp_histogram)
 
-    channel_statistics = []
-    for image_space in (hsv, ycrcb):
-        for channel in cv2.split(image_space):
-            channel_statistics.extend([float(channel.mean()) / 255.0, float(channel.std()) / 255.0])
+    if config.use_colour:
+        colour_features: list[np.ndarray] = []
+        for channel_index, channel in enumerate(cv2.split(hsv)):
+            value_range = (0, 180) if channel_index == 0 else (0, 256)
+            colour_features.append(_normalised_histogram(channel, config.histogram_bins, value_range))
+        for channel in cv2.split(ycrcb):
+            colour_features.append(_normalised_histogram(channel, config.histogram_bins, (0, 256)))
+        
+        channel_statistics = []
+        for image_space in (hsv, ycrcb):
+            for channel in cv2.split(image_space):
+                channel_statistics.extend([float(channel.mean()) / 255.0, float(channel.std()) / 255.0])
+        pieces.extend(colour_features)
+        pieces.append(np.asarray(channel_statistics, dtype=np.float32))
 
-    pieces = [
-        hog_features,
-        lbp_histogram,
-        *colour_features,
-        np.asarray(channel_statistics, dtype=np.float32),
-    ]
-    if config.include_contour_statistics:
+    if config.use_glcm:
+        glcm = graycomatrix(
+            gray,
+            distances=list(config.glcm_distances),
+            angles=list(config.glcm_angles),
+            levels=256,
+            symmetric=True,
+            normed=True,
+        )
+        glcm_features = []
+        for prop in ("contrast", "homogeneity", "energy", "correlation"):
+            glcm_features.append(graycoprops(glcm, prop).ravel())
+        pieces.append(np.concatenate(glcm_features).astype(np.float32))
+
+    if config.use_contours:
         pieces.append(_edge_statistics(gray))
+
+    if not pieces:
+        raise ValueError("At least one feature type must be enabled")
     return np.concatenate(pieces).astype(np.float32, copy=False)
 
 
@@ -132,13 +152,19 @@ def extract_split_features(
             {
                 "dimension": int(vectors[0].shape[0]),
                 "image_size": config.features.image_size,
+                "use_hog": config.features.use_hog,
+                "use_lbp": config.features.use_lbp,
+                "use_colour": config.features.use_colour,
+                "use_glcm": config.features.use_glcm,
+                "use_contours": config.features.use_contours,
                 "hog_orientations": config.features.hog_orientations,
                 "hog_pixels_per_cell": list(config.features.hog_pixels_per_cell),
                 "hog_cells_per_block": list(config.features.hog_cells_per_block),
                 "lbp_points": config.features.lbp_points,
                 "lbp_radius": config.features.lbp_radius,
+                "glcm_distances": list(config.features.glcm_distances),
+                "glcm_angles": list(config.features.glcm_angles),
                 "histogram_bins": config.features.histogram_bins,
-                "include_contour_statistics": config.features.include_contour_statistics,
             },
             indent=2,
         ),

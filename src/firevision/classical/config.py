@@ -38,13 +38,19 @@ class ColourConfig:
 @dataclass(frozen=True, slots=True)
 class FeatureConfig:
     image_size: int
+    use_hog: bool
+    use_lbp: bool
+    use_colour: bool
+    use_glcm: bool
+    use_contours: bool
     hog_orientations: int
     hog_pixels_per_cell: tuple[int, int]
     hog_cells_per_block: tuple[int, int]
     lbp_points: int
     lbp_radius: int
+    glcm_distances: tuple[int, ...]
+    glcm_angles: tuple[float, ...]
     histogram_bins: int
-    include_contour_statistics: bool
 
 
 @dataclass(frozen=True, slots=True)
@@ -54,6 +60,37 @@ class SVMConfig:
     cache_size_mb: int
     max_iter: int
     probability: bool
+
+
+@dataclass(frozen=True, slots=True)
+class RFConfig:
+    n_estimators_values: tuple[int, ...]
+    max_depth_values: tuple[int | None, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class XGBoostConfig:
+    n_estimators_values: tuple[int, ...]
+    max_depth_values: tuple[int, ...]
+    learning_rate_values: tuple[float, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class LightGBMConfig:
+    n_estimators_values: tuple[int, ...]
+    max_depth_values: tuple[int, ...]
+    learning_rate_values: tuple[float, ...]
+
+
+@dataclass(frozen=True, slots=True)
+class ModelConfig:
+    train_all: bool
+    type: str
+    svm: SVMConfig
+    random_forest: RFConfig
+    extra_trees: RFConfig
+    xgboost: XGBoostConfig
+    lightgbm: LightGBMConfig
 
 
 @dataclass(frozen=True, slots=True)
@@ -87,7 +124,7 @@ class ClassicalMLConfig:
     patches: PatchConfig
     colour: ColourConfig
     features: FeatureConfig
-    svm: SVMConfig
+    ml_model: ModelConfig
     motion: MotionConfig
     output: OutputConfig
 
@@ -126,7 +163,24 @@ def load_config(path: str | Path) -> ClassicalMLConfig:
     patches = raw["patches"]
     colour = raw["colour_baseline"]
     features = raw["features"]
-    svm = raw["svm"]
+    ml_model = raw.get("ml_model")
+    if ml_model is None:
+        # Fallback for backward compatibility
+        svm_raw = raw.get("svm", {})
+        ml_model = {
+            "train_all": False,
+            "type": "svm",
+            "svm": svm_raw,
+            "random_forest": {"n_estimators_values": [100], "max_depth_values": [None]},
+            "extra_trees": {"n_estimators_values": [100], "max_depth_values": [None]},
+            "xgboost": {"n_estimators_values": [100], "max_depth_values": [6], "learning_rate_values": [0.1]},
+            "lightgbm": {"n_estimators_values": [100], "max_depth_values": [6], "learning_rate_values": [0.1]},
+        }
+    svm = ml_model.get("svm", {})
+    rf = ml_model.get("random_forest", {"n_estimators_values": [100], "max_depth_values": [None]})
+    et = ml_model.get("extra_trees", {"n_estimators_values": [100], "max_depth_values": [None]})
+    xgb = ml_model.get("xgboost", {"n_estimators_values": [100], "max_depth_values": [6], "learning_rate_values": [0.1]})
+    lgbm = ml_model.get("lightgbm", {"n_estimators_values": [100], "max_depth_values": [6], "learning_rate_values": [0.1]})
     motion = raw["motion"]
     output = raw["output"]
 
@@ -173,20 +227,48 @@ def load_config(path: str | Path) -> ClassicalMLConfig:
         ),
         features=FeatureConfig(
             image_size=int(features["image_size"]),
+            use_hog=bool(features.get("use_hog", True)),
+            use_lbp=bool(features.get("use_lbp", True)),
+            use_colour=bool(features.get("use_colour", True)),
+            use_glcm=bool(features.get("use_glcm", False)),
+            use_contours=bool(features.get("use_contours", features.get("include_contour_statistics", True))),
             hog_orientations=int(features["hog_orientations"]),
             hog_pixels_per_cell=tuple(int(v) for v in features["hog_pixels_per_cell"]),
             hog_cells_per_block=tuple(int(v) for v in features["hog_cells_per_block"]),
             lbp_points=int(features["lbp_points"]),
             lbp_radius=int(features["lbp_radius"]),
+            glcm_distances=tuple(int(v) for v in features.get("glcm_distances", [1])),
+            glcm_angles=tuple(float(v) for v in features.get("glcm_angles", [0.0])),
             histogram_bins=int(features["histogram_bins"]),
-            include_contour_statistics=bool(features["include_contour_statistics"]),
         ),
-        svm=SVMConfig(
-            c_values=tuple(float(v) for v in svm["c_values"]),
-            gamma_values=_gamma_values(svm["gamma_values"]),
-            cache_size_mb=int(svm["cache_size_mb"]),
-            max_iter=int(svm.get("max_iter", -1)),
-            probability=bool(svm.get("probability", False)),
+        ml_model=ModelConfig(
+            train_all=bool(ml_model.get("train_all", False)),
+            type=str(ml_model.get("type", "svm")),
+            svm=SVMConfig(
+                c_values=tuple(float(v) for v in svm.get("c_values", [1.0])),
+                gamma_values=_gamma_values(svm.get("gamma_values", ["scale"])),
+                cache_size_mb=int(svm.get("cache_size_mb", 2048)),
+                max_iter=int(svm.get("max_iter", -1)),
+                probability=bool(svm.get("probability", False)),
+            ),
+            random_forest=RFConfig(
+                n_estimators_values=tuple(int(v) for v in rf.get("n_estimators_values", [100])),
+                max_depth_values=tuple(int(v) if v is not None else None for v in rf.get("max_depth_values", [None])),
+            ),
+            extra_trees=RFConfig(
+                n_estimators_values=tuple(int(v) for v in et.get("n_estimators_values", [100])),
+                max_depth_values=tuple(int(v) if v is not None else None for v in et.get("max_depth_values", [None])),
+            ),
+            xgboost=XGBoostConfig(
+                n_estimators_values=tuple(int(v) for v in xgb.get("n_estimators_values", [100])),
+                max_depth_values=tuple(int(v) for v in xgb.get("max_depth_values", [6])),
+                learning_rate_values=tuple(float(v) for v in xgb.get("learning_rate_values", [0.1])),
+            ),
+            lightgbm=LightGBMConfig(
+                n_estimators_values=tuple(int(v) for v in lgbm.get("n_estimators_values", [100])),
+                max_depth_values=tuple(int(v) for v in lgbm.get("max_depth_values", [6])),
+                learning_rate_values=tuple(float(v) for v in lgbm.get("learning_rate_values", [0.1])),
+            )
         ),
         motion=MotionConfig(
             mog2_history=int(motion["mog2_history"]),

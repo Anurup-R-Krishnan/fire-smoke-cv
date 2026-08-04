@@ -47,7 +47,7 @@ mkdir -p data/processed
 ln -sfn ../../raw/dfire data/processed/fire_smoke
 
 # 6. Install Project Dependencies
-echo "Installing FireSmoke project dependencies..."
-uv pip install --system -e ".[detector,video]"
+echo "Installing FireSmoke project dependencies for Classical ML..."
+uv pip install --system -e ".[classical]"
 
 echo "Setup Complete! You can now run Phase 2 training."

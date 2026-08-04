@@ -20,7 +20,14 @@ from .evaluate import (
     tune_area_thresholds,
 )
 from .features import extract_split_features
-from .svm_model import evaluate_svm, train_and_select_svm
+from .models import (
+    evaluate_model,
+    train_and_select_svm,
+    train_and_select_rf,
+    train_and_select_extra_trees,
+    train_and_select_xgboost,
+    train_and_select_lightgbm,
+)
 
 
 def _clean_outputs(config: ClassicalMLConfig) -> None:
@@ -110,15 +117,12 @@ def _patch_counts(records: list[PatchRecord]) -> dict[str, dict[str, int]]:
 def _comparison_rows(
     classical_val: dict[str, object],
     classical_test: dict[str, object],
-    svm_val: dict[str, object],
-    svm_test: dict[str, object],
+    ml_metrics_list: list[tuple[str, dict[str, object], dict[str, object]]],
 ) -> list[dict[str, object]]:
     rows = []
     for method, split, metrics in (
         ("colour+morphology", "val", classical_val),
         ("colour+morphology", "test", classical_test),
-        ("HOG+LBP+colour RBF-SVM", "val", svm_val),
-        ("HOG+LBP+colour RBF-SVM", "test", svm_test),
     ):
         rows.append(
             {
@@ -131,6 +135,19 @@ def _comparison_rows(
                 "support": metrics["support"],
             }
         )
+    for ml_name, ml_val, ml_test in ml_metrics_list:
+        for split, metrics in (("val", ml_val), ("test", ml_test)):
+            rows.append(
+                {
+                    "method": ml_name,
+                    "split": split,
+                    "accuracy": metrics["accuracy"],
+                    "macro_precision": metrics["macro_precision"],
+                    "macro_recall": metrics["macro_recall"],
+                    "macro_f1": metrics["macro_f1"],
+                    "support": metrics["support"],
+                }
+            )
     return rows
 
 
@@ -188,7 +205,7 @@ def _write_report(
             "## Artifacts",
             "",
             "- `colour_thresholds.json`: fitted pixel and area thresholds",
-            "- `hog_lbp_colour_rbf_svm.joblib`: selected SVM pipeline",
+            "- `*_model.joblib`: trained ML pipelines",
             "- `features_{train,val,test}.npz`: deterministic feature archives",
             "- Confusion matrices and failure galleries in `reports/classical/`",
             "",
@@ -254,32 +271,57 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
 
     for split in ("train", "val", "test"):
         extract_split_features(records, split, config)
-    svm_model, svm_training = train_and_select_svm(config)
-    svm_val, svm_val_true, svm_val_pred, svm_val_paths = evaluate_svm(svm_model, config, "val")
-    svm_test, svm_test_true, svm_test_pred, svm_test_paths = evaluate_svm(svm_model, config, "test")
-    save_metrics(svm_val, config.output.report_dir / "svm_val_metrics.json")
-    save_metrics(svm_test, config.output.report_dir / "svm_test_metrics.json")
-    save_confusion_matrix(
-        svm_test_true,
-        svm_test_pred,
-        config.output.report_dir / "svm_test_confusion_matrix.png",
-        "HOG + LBP + colour RBF-SVM — test",
-    )
-    _write_prediction_csv(
-        svm_test_paths,
-        svm_test_true,
-        svm_test_pred,
-        config.output.report_dir / "svm_test_predictions.csv",
-    )
-    _failure_gallery(
-        svm_test_paths,
-        svm_test_true,
-        svm_test_pred,
-        config.output.report_dir / "svm_failure_gallery.png",
-        "RBF-SVM failures",
-    )
+    
+    if config.ml_model.train_all:
+        models_to_train = [
+            ("svm", "HOG+LBP+colour RBF-SVM", train_and_select_svm),
+            ("rf", "LBP+GLCM+Contours Random Forest", train_and_select_rf),
+            ("et", "Extra Trees", train_and_select_extra_trees),
+            ("xgb", "XGBoost", train_and_select_xgboost),
+            ("lgbm", "LightGBM", train_and_select_lightgbm),
+        ]
+    else:
+        model_type = config.ml_model.type
+        if model_type == "random_forest":
+            models_to_train = [("rf", "LBP+GLCM+Contours Random Forest", train_and_select_rf)]
+        else:
+            models_to_train = [("svm", "HOG+LBP+colour RBF-SVM", train_and_select_svm)]
 
-    comparison = _comparison_rows(classical_val, classical_test, svm_val, svm_test)
+    ml_metrics_list = []
+    ml_trainings = {}
+    
+    for short_name, ml_name, train_func in models_to_train:
+        ml_model, ml_training = train_func(config)
+        ml_trainings[short_name] = ml_training
+        
+        ml_val, ml_val_true, ml_val_pred, ml_val_paths = evaluate_model(ml_model, config, "val")
+        ml_test, ml_test_true, ml_test_pred, ml_test_paths = evaluate_model(ml_model, config, "test")
+        
+        save_metrics(ml_val, config.output.report_dir / f"{short_name}_val_metrics.json")
+        save_metrics(ml_test, config.output.report_dir / f"{short_name}_test_metrics.json")
+        save_confusion_matrix(
+            ml_test_true,
+            ml_test_pred,
+            config.output.report_dir / f"{short_name}_test_confusion_matrix.png",
+            f"{ml_name} — test",
+        )
+        _write_prediction_csv(
+            ml_test_paths,
+            ml_test_true,
+            ml_test_pred,
+            config.output.report_dir / f"{short_name}_test_predictions.csv",
+        )
+        _failure_gallery(
+            ml_test_paths,
+            ml_test_true,
+            ml_test_pred,
+            config.output.report_dir / f"{short_name}_failure_gallery.png",
+            f"{ml_name} failures",
+        )
+        
+        ml_metrics_list.append((ml_name, ml_val, ml_test))
+
+    comparison = _comparison_rows(classical_val, classical_test, ml_metrics_list)
     comparison_path = config.output.report_dir / "method_comparison.csv"
     with comparison_path.open("w", newline="", encoding="utf-8") as handle:
         writer = csv.DictWriter(handle, fieldnames=list(comparison[0].keys()))
@@ -291,11 +333,8 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
         "colour_thresholds": tuned_thresholds.to_dict(),
         "classical_validation": classical_val,
         "classical_test": classical_test,
-        "svm_training": svm_training,
-        "svm_validation": svm_val,
-        "svm_test": svm_test,
+        "ml_trainings": ml_trainings,
         "threshold_model": str(threshold_path),
-        "svm_model": str(config.output.artifact_dir / "hog_lbp_colour_rbf_svm.joblib"),
     }
     (config.output.report_dir / "summary.json").write_text(
         json.dumps(summary, indent=2), encoding="utf-8"
