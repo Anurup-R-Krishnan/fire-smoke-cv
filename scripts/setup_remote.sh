@@ -26,15 +26,20 @@ else
     echo "uv is already installed."
 fi
 
-# 4. Install Kaggle CLI
-echo "Installing Kaggle CLI..."
-# Using uv to install globally on the system python
-uv pip install --system kaggle
+# 4. Create and activate virtual environment
+echo "Setting up Python virtual environment..."
+if [ ! -d ".venv" ]; then
+    uv venv .venv
+fi
+source .venv/bin/activate
 
-# 5. Download and extract Dataset
+# 5. Install Kaggle CLI
+echo "Installing Kaggle CLI..."
+uv pip install kaggle
+
+# 6. Download and extract Dataset
 echo "Downloading D-Fire Dataset..."
 mkdir -p data/raw/dfire
-# The -p flag sets the download path
 kaggle datasets download -d alxmamaev/dfire-yolo -p data/raw/dfire
 
 echo "Unzipping dataset..."
@@ -46,8 +51,8 @@ echo "Setting up dataset symlinks..."
 mkdir -p data/processed
 ln -sfn ../../raw/dfire data/processed/fire_smoke
 
-# 6. Install Project Dependencies
+# 7. Install Project Dependencies
 echo "Installing FireSmoke project dependencies for Classical ML..."
-uv pip install --system -e ".[classical]"
+uv pip install -e ".[classical]"
 
 echo "Setup Complete! You can now run Phase 2 training."
