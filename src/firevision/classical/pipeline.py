@@ -218,7 +218,7 @@ def _write_report(
 
 
 def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
-    if not (config.dataset_dir / "images" / "train").exists():
+    if not (config.dataset_dir / "train" / "images").exists():
         raise FileNotFoundError(
             f"Processed Data Prep dataset not found at {config.dataset_dir}. Run Data Prep first."
         )
@@ -226,6 +226,9 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
     records = prepare_patch_dataset(config)
     counts = _patch_counts(records)
     for split, split_counts in counts.items():
+        total = sum(split_counts.values())
+        if total == 0:
+            continue  # Split not present in this dataset (e.g. no val split)
         missing = [name for name, count in split_counts.items() if count == 0]
         if missing:
             raise ValueError(f"Split {split} has no patches for classes: {', '.join(missing)}")
