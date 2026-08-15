@@ -1,4 +1,18 @@
-# Fire and Smoke Detection Case Study
+<div align="center">
+
+# 🔥 Fire and Smoke Detection Case Study
+
+### Real-time detection with temporal false-alarm suppression
+
+[![Python](https://img.shields.io/badge/Python-3.11%2B-3776AB?style=for-the-badge&logo=python&logoColor=white)](src/)
+[![OpenCV](https://img.shields.io/badge/OpenCV-computer%20vision-5C3EE8?style=for-the-badge&logo=opencv&logoColor=white)](src/)
+[![YOLO](https://img.shields.io/badge/YOLO11n-object%20detection-00FFFF?style=for-the-badge)](src/)
+[![SVM](https://img.shields.io/badge/RBF--SVM-classical%20ML-E76F51?style=for-the-badge)](src/)
+[![Research](https://img.shields.io/badge/type-reproducible%20case%20study-264653?style=for-the-badge)](#limitations)
+
+<p><a href="#implemented-pipeline">Pipeline</a> · <a href="#experiments">Experiments</a> · <a href="#reproduction">Reproduction</a> · <a href="#limitations">Boundaries</a></p>
+
+</div>
 
 A reproducible computer-vision case study sized for a laptop-class RTX 3050 Ti. It compares classical methods, machine learning, lightweight deep learning, object detection, and temporal video fusion.
 
