@@ -1,6 +1,6 @@
 # Fire and Smoke Detection Case Study
 
-A five-phase implementation for a three-month college Computer Vision case study. The project is deliberately sized for a laptop-class RTX 3050 Ti and a five-member team.
+A reproducible computer-vision case study sized for a laptop-class RTX 3050 Ti. It compares classical methods, machine learning, lightweight deep learning, object detection, and temporal video fusion.
 
 ## Final project statement
 
@@ -8,7 +8,7 @@ A five-phase implementation for a three-month college Computer Vision case study
 
 The study compares classical computer vision, conventional machine learning, lightweight CNN classification, object detection, and temporal video processing. The final system detects fire/smoke, tracks persistent regions, and suppresses one-frame false alarms.
 
-## Five implementation phases
+## Implemented pipeline
 
 ### Data Prep: Data foundation and camera calibration — implemented
 
@@ -77,7 +77,7 @@ Implemented:
 
 Exit criterion: stable video events with fewer false alerts than frame-only detection. See `docs/VIDEO_IMPLEMENTATION.md`.
 
-### Phase 5: Evaluation, deployment, and case-study report
+### Evaluation, deployment, and case-study report
 
 Implement:
 
