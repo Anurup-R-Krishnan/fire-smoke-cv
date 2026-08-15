@@ -219,7 +219,7 @@ def _write_report(
 
 
 def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
-    if not (config.dataset_dir / "train" / "images").exists():
+    if not (config.dataset_dir / "images" / "train").exists():
         raise FileNotFoundError(
             f"Processed Data Prep dataset not found at {config.dataset_dir}. Run Data Prep first."
         )
@@ -294,6 +294,7 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
 
     ml_metrics_list = []
     ml_trainings = {}
+    ml_results = {}
     
     for short_name, ml_name, train_func in models_to_train:
         ml_model, ml_training = train_func(config, eval_split)
@@ -301,6 +302,7 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
         
         ml_val, ml_val_true, ml_val_pred, ml_val_paths, ml_val_proba = evaluate_model(ml_model, config, eval_split)
         ml_test, ml_test_true, ml_test_pred, ml_test_paths, ml_test_proba = evaluate_model(ml_model, config, "test")
+        ml_results[short_name] = {"validation": ml_val, "test": ml_test}
         
         ml_metrics_list.append((ml_name, ml_val, ml_test))
         # Store for plotting later
@@ -335,8 +337,6 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
             f"{ml_name} failures",
         )
         
-        ml_metrics_list.append((ml_name, ml_val, ml_test))
-
     comparison = _comparison_rows(classical_val, classical_test, ml_metrics_list)
     comparison_path = config.output.report_dir / "method_comparison.csv"
     with comparison_path.open("w", newline="", encoding="utf-8") as handle:
@@ -350,8 +350,10 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
         "classical_validation": classical_val,
         "classical_test": classical_test,
         "ml_trainings": ml_trainings,
+        "ml_results": ml_results,
         "threshold_model": str(threshold_path),
     }
+    summary.update({f"{name}_test": result["test"] for name, result in ml_results.items()})
     (config.output.report_dir / "summary.json").write_text(
         json.dumps(summary, indent=2), encoding="utf-8"
     )

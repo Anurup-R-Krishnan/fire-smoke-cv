@@ -185,8 +185,8 @@ def _letterbox(image: np.ndarray, size: int) -> np.ndarray:
 
 
 def _collect_candidates(config: ClassicalMLConfig, split: str) -> dict[int, list[PatchCandidate]]:
-    image_root = config.dataset_dir / split / "images"
-    label_root = config.dataset_dir / split / "labels"
+    image_root = config.dataset_dir / "images" / split
+    label_root = config.dataset_dir / "labels" / split
     by_class: dict[int, list[PatchCandidate]] = {0: [], 1: [], 2: []}
 
     if not image_root.exists():
