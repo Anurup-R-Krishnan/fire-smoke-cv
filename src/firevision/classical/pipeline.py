@@ -326,6 +326,7 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
 
     ml_metrics_list = []
     ml_trainings = {}
+    ml_results = {}
     plot_results = []
     
     for short_name, ml_name, train_func in models_to_train:
