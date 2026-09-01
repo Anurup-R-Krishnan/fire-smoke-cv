@@ -1,6 +1,6 @@
-path: /home/anuruprkris/Project/FireSmoke/data
+path: /home/anuruprkris/Project/FireSmoke/data/processed/fire_smoke
 train: train/images
-val: test/images
+val: val/images
 test: test/images
 
 nc: 2

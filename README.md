@@ -1,10 +1,4 @@
-# Fire and Smoke Detection Case Study
-
-A five-phase implementation for a three-month college Computer Vision case study. The project is deliberately sized for a laptop-class RTX 3050 Ti and a five-member team.
-
-## Final project statement
-
-**Real-Time Fire and Smoke Detection in Video with Temporal False-Alarm Suppression**
+## Real-Time Fire and Smoke Detection in Video with Temporal False-Alarm Suppression
 
 The study compares classical computer vision, conventional machine learning, lightweight CNN classification, object detection, and temporal video processing. The final system detects fire/smoke, tracks persistent regions, and suppresses one-frame false alarms.
 
@@ -251,7 +245,7 @@ Classical ML compares two non-deep-learning approaches:
 1. A data-derived colour, morphology, and contour baseline
 2. A three-class RBF-SVM using HOG, LBP, HSV, YCrCb, channel statistics, and edge-contour features
 
-The RTX 3050 Ti is not required in this phase. Feature extraction and SVM training run on the CPU. The patch caps in `configs/classical.yaml` keep the RBF-SVM experiment practical on a student laptop.
+The patch caps in `configs/classical.yaml` keep the RBF-SVM experiment practical on a student laptop.
 
 ## 1. Install Classical ML dependencies
 
@@ -422,9 +416,6 @@ Complete pipeline:
 ```bash
 python scripts/run_detector.py --config configs/detector.yaml
 ```
-
-VGG16 is implemented but disabled by default in `configs/detector.yaml`. The MobileNetV3-Small and YOLO11n experiments are the required Detector Training runs for the RTX 3050 Ti.
-
 
 # Run Video Fusion
 

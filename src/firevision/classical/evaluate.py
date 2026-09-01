@@ -124,7 +124,7 @@ def tune_area_thresholds(
     for fire_threshold in config.colour.area_grid_fire:
         for smoke_threshold in config.colour.area_grid_smoke:
             candidate = model.with_area_thresholds(fire_threshold, smoke_threshold)
-            tuning_split = "val" if any(r.split == "val" for r in records) else "test"
+            tuning_split = "val" if any(r.split == "val" for r in records) else "train"
             metrics, _, _ = evaluate_classical_records(records, tuning_split, candidate, config)
             row = {
                 "fire_area_threshold": fire_threshold,

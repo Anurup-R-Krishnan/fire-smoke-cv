@@ -116,39 +116,58 @@ def _patch_counts(records: list[PatchRecord]) -> dict[str, dict[str, int]]:
 
 
 def _comparison_rows(
-    classical_val: dict[str, object],
+    classical_val: dict[str, object] | None,
     classical_test: dict[str, object],
-    ml_metrics_list: list[tuple[str, dict[str, object], dict[str, object]]],
+    ml_metrics_list: list[tuple[str, dict[str, object] | None, dict[str, object]]],
 ) -> list[dict[str, object]]:
     rows = []
-    for method, split, metrics in (
-        ("colour+morphology", "val", classical_val),
-        ("colour+morphology", "test", classical_test),
-    ):
+    if classical_val is not None:
         rows.append(
             {
-                "method": method,
-                "split": split,
-                "accuracy": metrics["accuracy"],
-                "macro_precision": metrics["macro_precision"],
-                "macro_recall": metrics["macro_recall"],
-                "macro_f1": metrics["macro_f1"],
-                "support": metrics["support"],
+                "method": "colour+morphology",
+                "split": "val",
+                "accuracy": classical_val["accuracy"],
+                "macro_precision": classical_val["macro_precision"],
+                "macro_recall": classical_val["macro_recall"],
+                "macro_f1": classical_val["macro_f1"],
+                "support": classical_val["support"],
             }
         )
+    rows.append(
+        {
+            "method": "colour+morphology",
+            "split": "test",
+            "accuracy": classical_test["accuracy"],
+            "macro_precision": classical_test["macro_precision"],
+            "macro_recall": classical_test["macro_recall"],
+            "macro_f1": classical_test["macro_f1"],
+            "support": classical_test["support"],
+        }
+    )
     for ml_name, ml_val, ml_test in ml_metrics_list:
-        for split, metrics in (("val", ml_val), ("test", ml_test)):
+        if ml_val is not None:
             rows.append(
                 {
                     "method": ml_name,
-                    "split": split,
-                    "accuracy": metrics["accuracy"],
-                    "macro_precision": metrics["macro_precision"],
-                    "macro_recall": metrics["macro_recall"],
-                    "macro_f1": metrics["macro_f1"],
-                    "support": metrics["support"],
+                    "split": "val",
+                    "accuracy": ml_val["accuracy"],
+                    "macro_precision": ml_val["macro_precision"],
+                    "macro_recall": ml_val["macro_recall"],
+                    "macro_f1": ml_val["macro_f1"],
+                    "support": ml_val["support"],
                 }
             )
+        rows.append(
+            {
+                "method": ml_name,
+                "split": "test",
+                "accuracy": ml_test["accuracy"],
+                "macro_precision": ml_test["macro_precision"],
+                "macro_recall": ml_test["macro_recall"],
+                "macro_f1": ml_test["macro_f1"],
+                "support": ml_test["support"],
+            }
+        )
     return rows
 
 
@@ -159,21 +178,29 @@ def _write_report(
 ) -> None:
     counts = summary["patch_counts"]
     thresholds = summary["colour_thresholds"]
+    has_val = sum(counts.get("val", {}).values()) > 0
     lines = [
         "# Classical ML Report: Classical CV and Conventional ML",
         "",
         "## Leakage controls",
         "",
-        "- Patches inherit the original Data Prep train/validation/test split.",
+        "- Patches inherit the original Data Prep split.",
         "- Pixel colour thresholds are fitted using training patches only.",
-        "- Mask-area thresholds are selected using validation patches only.",
-        "- Final metrics are reported on untouched test patches.",
-        "",
-        "## Patch dataset",
-        "",
-        "| Split | Fire | Smoke | Normal |",
-        "|---|---:|---:|---:|",
     ]
+    if has_val:
+        lines.append("- Mask-area thresholds are selected using validation patches only.")
+    else:
+        lines.append("- Note: Dataset has no validation split (val=0); evaluation is reported on held-out test patches.")
+    lines.extend(
+        [
+            "- Final metrics are reported on untouched test patches.",
+            "",
+            "## Patch dataset",
+            "",
+            "| Split | Fire | Smoke | Normal |",
+            "|---|---:|---:|---:|",
+        ]
+    )
     for split in ("train", "val", "test"):
         values = counts[split]
         lines.append(
@@ -226,7 +253,8 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
     _clean_outputs(config)
     records = prepare_patch_dataset(config)
     counts = _patch_counts(records)
-    eval_split = "val" if any(r.split == "val" for r in records) else "test"
+    has_val = any(r.split == "val" for r in records)
+    eval_split = "val" if has_val else "test"
     for split, split_counts in counts.items():
         total = sum(split_counts.values())
         if total == 0:
@@ -243,13 +271,18 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
         threshold_trials, config.output.report_dir / "classical_threshold_trials.csv"
     )
 
-    classical_val, classical_val_true, classical_val_pred = evaluate_classical_records(
-        records,
-        eval_split,
-        tuned_thresholds,
-        config,
-        config.output.report_dir / "classical_val_predictions.csv",
-    )
+    if has_val:
+        classical_val, classical_val_true, classical_val_pred = evaluate_classical_records(
+            records,
+            "val",
+            tuned_thresholds,
+            config,
+            config.output.report_dir / "classical_val_predictions.csv",
+        )
+        save_metrics(classical_val, config.output.report_dir / "classical_val_metrics.json")
+    else:
+        classical_val = None
+
     classical_test, classical_test_true, classical_test_pred = evaluate_classical_records(
         records,
         "test",
@@ -257,7 +290,6 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
         config,
         config.output.report_dir / "classical_test_predictions.csv",
     )
-    save_metrics(classical_val, config.output.report_dir / "classical_val_metrics.json")
     save_metrics(classical_test, config.output.report_dir / "classical_test_metrics.json")
     save_confusion_matrix(
         classical_test_true,
@@ -274,7 +306,7 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
         "Classical baseline failures",
     )
 
-    for split in ("train", eval_split, "test"):
+    for split in ("train", "val", "test") if has_val else ("train", "test"):
         extract_split_features(records, split, config)
     
     if config.ml_model.train_all:
@@ -294,18 +326,22 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
 
     ml_metrics_list = []
     ml_trainings = {}
+    plot_results = []
     
     for short_name, ml_name, train_func in models_to_train:
-        ml_model, ml_training = train_func(config, eval_split)
+        ml_model, ml_training = train_func(config, "val" if has_val else "test")
         ml_trainings[short_name] = ml_training
         
-        ml_val, ml_val_true, ml_val_pred, ml_val_paths, ml_val_proba = evaluate_model(ml_model, config, eval_split)
+        if has_val:
+            ml_val, ml_val_true, ml_val_pred, ml_val_paths, ml_val_proba = evaluate_model(ml_model, config, "val")
+            save_metrics(ml_val, config.output.report_dir / f"{short_name}_val_metrics.json")
+        else:
+            ml_val = None
+
         ml_test, ml_test_true, ml_test_pred, ml_test_paths, ml_test_proba = evaluate_model(ml_model, config, "test")
         
         ml_metrics_list.append((ml_name, ml_val, ml_test))
         # Store for plotting later
-        if "plot_results" not in locals():
-            plot_results = []
         plot_results.append({
             "name": ml_name,
             "y_true": ml_test_true,
@@ -313,7 +349,6 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
             "y_proba": ml_test_proba,
         })
         
-        save_metrics(ml_val, config.output.report_dir / f"{short_name}_val_metrics.json")
         save_metrics(ml_test, config.output.report_dir / f"{short_name}_test_metrics.json")
         save_confusion_matrix(
             ml_test_true,
@@ -334,8 +369,6 @@ def run_pipeline(config: ClassicalMLConfig) -> dict[str, object]:
             config.output.report_dir / f"{short_name}_failure_gallery.png",
             f"{ml_name} failures",
         )
-        
-        ml_metrics_list.append((ml_name, ml_val, ml_test))
 
     comparison = _comparison_rows(classical_val, classical_test, ml_metrics_list)
     comparison_path = config.output.report_dir / "method_comparison.csv"

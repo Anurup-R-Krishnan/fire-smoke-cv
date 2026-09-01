@@ -19,15 +19,15 @@ def main() -> None:
     parser.add_argument("--config", default="configs/classical.yaml")
     args = parser.parse_args()
     summary = run_pipeline(load_config(PROJECT_ROOT / args.config))
-    compact = {
+    compact: dict[str, object] = {
         "patch_counts": summary.get("patch_counts"),
-        "classical_test_macro_f1": summary.get("classical_test", {}).get("macro_f1"),
+        "classical_test_macro_f1": (summary.get("classical_test") or {}).get("macro_f1"),
     }
     ml_trainings = summary.get("ml_trainings", {})
     if "svm" in ml_trainings:
         compact["svm_best_parameters"] = ml_trainings["svm"].get("best_parameters")
         compact["svm_val_macro_f1"] = ml_trainings["svm"].get("best_validation_macro_f1")
-    print(json.dumps(compact, indent=2))
+    print(json.dumps(compact, indent=2, default=str))
 
 
 if __name__ == "__main__":
