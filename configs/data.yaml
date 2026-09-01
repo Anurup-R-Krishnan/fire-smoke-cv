@@ -5,27 +5,26 @@ classes:
   0: fire
   1: smoke
 
-# Add one entry for every image/annotation directory pair you download.
-# Paths may be absolute or relative to project_root.
+# dfire ships as train/ and test/ subdirs; pool both so Data Prep can
+# re-split them into train/val/test (70/15/15) with proper stratification.
 sources:
-  - name: dfire
+  - name: dfire_train
     format: yolo
-    images_dir: data/raw/dfire/images
-    labels_dir: data/raw/dfire/labels
+    images_dir: data/raw/dfire/train/images
+    labels_dir: data/raw/dfire/train/labels
     class_map:
       0: 0
       1: 1
     missing_label_is_negative: true
 
-  # Uncomment after downloading DFS and arranging its VOC XML files.
-  # - name: dfs
-  #   format: voc
-  #   images_dir: data/raw/dfs/images
-  #   labels_dir: data/raw/dfs/annotations
-  #   class_map:
-  #     fire: 0
-  #     smoke: 1
-  #   missing_label_is_negative: false
+  - name: dfire_test
+    format: yolo
+    images_dir: data/raw/dfire/test/images
+    labels_dir: data/raw/dfire/test/labels
+    class_map:
+      0: 0
+      1: 1
+    missing_label_is_negative: true
 
 validation:
   min_width: 32
@@ -34,8 +33,6 @@ validation:
   drop_unknown_classes: true
   drop_tiny_boxes_pixels: 4
 
-# Exact duplicates are removed. Near duplicates are not deleted; they are grouped
-# so that visually similar copies cannot leak across train/val/test.
 deduplication:
   exact_duplicates: true
   perceptual_hash: true
@@ -50,6 +47,6 @@ split:
 output:
   dataset_dir: data/processed/fire_smoke
   report_dir: reports/data
-  transfer_mode: hardlink  # hardlink, copy, or symlink
+  transfer_mode: copy
   overwrite: true
   preview_samples: 24
