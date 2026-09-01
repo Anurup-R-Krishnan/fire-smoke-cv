@@ -2,7 +2,7 @@
 
 The study compares classical computer vision, conventional machine learning, lightweight CNN classification, object detection, and temporal video processing. The final system detects fire/smoke, tracks persistent regions, and suppresses one-frame false alarms.
 
-## Five implementation phases
+## Implemented pipeline
 
 ### Data Prep: Data foundation and camera calibration — implemented
 
@@ -52,7 +52,7 @@ Implemented:
 7. Grad-CAM for classifier failure analysis
 8. Precision, recall, F1, AP50, and AP50-95 evaluation
 
-Exit criterion: best detector checkpoint and reproducible experiment logs. See `docs/PHASE3_IMPLEMENTATION.md`.
+Exit criterion: best detector checkpoint and reproducible experiment logs. See `docs/DETECTOR_IMPLEMENTATION.md`.
 
 ### Video Fusion: Temporal video fusion — implemented
 
@@ -69,9 +69,9 @@ Implemented:
 9. Optional MOG2 evidence for stationary cameras
 10. Visual risk indicator using persistence, area, motion, and growth
 
-Exit criterion: stable video events with fewer false alerts than frame-only detection. See `docs/PHASE4_IMPLEMENTATION.md`.
+Exit criterion: stable video events with fewer false alerts than frame-only detection. See `docs/VIDEO_IMPLEMENTATION.md`.
 
-### Phase 5: Evaluation, deployment, and case-study report
+### Evaluation, deployment, and case-study report
 
 Implement:
 
@@ -101,7 +101,7 @@ cd fire-smoke-cv-case-study
 python3 -m venv .venv
 source .venv/bin/activate
 python -m pip install --upgrade pip
-pip install -r requirements-data.txt
+pip install -e .
 python scripts/check_environment.py
 ```
 
@@ -112,7 +112,7 @@ cd fire-smoke-cv-case-study
 py -3.11 -m venv .venv
 .venv\Scripts\Activate.ps1
 python -m pip install --upgrade pip
-pip install -r requirements-data.txt
+pip install -e .
 python scripts/check_environment.py
 ```
 
@@ -156,7 +156,7 @@ Then uncomment the DFS source in `configs/data.yaml`. VOC class names `fire` and
 ## 4. Run the preparation pipeline
 
 ```bash
-python scripts/run_data.py --config configs/data.yaml
+python scripts/run_data_pipeline.py --config configs/data.yaml
 ```
 
 Generated dataset:
@@ -252,7 +252,7 @@ The patch caps in `configs/classical.yaml` keep the RBF-SVM experiment practical
 With the Data Prep environment activated:
 
 ```bash
-pip install -r requirements-classical.txt
+pip install -e ".[classical]"
 python scripts/check_classical_environment.py
 ```
 
@@ -272,7 +272,7 @@ Do not rebuild random splits in Classical ML. Every generated patch inherits the
 ## 3. Run the complete Classical ML pipeline
 
 ```bash
-python scripts/run_classical.py --config configs/classical.yaml
+python scripts/run_classical_pipeline.py --config configs/classical.yaml
 ```
 
 The command performs all of the following:
@@ -389,7 +389,7 @@ A strong SVM result does not mean that the final system can localise fire in ful
 Detector Training requires the Data Prep detection dataset and Classical ML patch dataset. Install a CUDA-enabled PyTorch build first, then:
 
 ```bash
-pip install -r requirements-detector.txt
+pip install -e ".[detector]"
 python scripts/check_detector_environment.py
 ```
 
@@ -414,7 +414,7 @@ python scripts/tune_detector_thresholds.py --config configs/detector.yaml
 Complete pipeline:
 
 ```bash
-python scripts/run_detector.py --config configs/detector.yaml
+python scripts/run_detector_pipeline.py --config configs/detector.yaml
 ```
 
 # Run Video Fusion
@@ -423,14 +423,14 @@ Install the temporal-video dependencies:
 
 ```bash
 source .venv/bin/activate
-pip install -r requirements-video.txt
+pip install -e ".[video]"
 python scripts/check_video_environment.py
 ```
 
 Run on a video:
 
 ```bash
-python scripts/run_video.py \
+python scripts/run_video_pipeline.py \
   --config configs/video.yaml \
   --source path/to/video.mp4 \
   --output reports/video/annotated_video.mp4
@@ -439,7 +439,7 @@ python scripts/run_video.py \
 Run on a fixed webcam and enable MOG2:
 
 ```bash
-python scripts/run_video.py --config configs/video.yaml --source 0 --fixed-camera
+python scripts/run_video_pipeline.py --config configs/video.yaml --source 0 --fixed-camera
 ```
 
-Outputs are written to `reports/video/`. See `docs/PHASE4_IMPLEMENTATION.md` for the full algorithm and test procedure.
+Outputs are written to `reports/video/`. See `docs/VIDEO_IMPLEMENTATION.md` for the full algorithm and test procedure.

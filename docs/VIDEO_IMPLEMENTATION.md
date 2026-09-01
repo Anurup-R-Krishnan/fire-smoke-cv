@@ -59,7 +59,7 @@ POSSIBLE_SMOKE
 CONFIRMED_SMOKE
 ```
 
-These parameters are starting values. Phase 5 will compare alternatives on validation videos.
+These parameters are starting values and should be compared on validation videos before reporting results.
 
 ## Motion evidence
 

@@ -168,13 +168,19 @@ def test_feature_extraction_is_deterministic() -> None:
 
     config = FeatureConfig(
         image_size=64,
+        use_hog=True,
+        use_lbp=True,
+        use_colour=True,
+        use_glcm=False,
+        use_contours=True,
         hog_orientations=9,
         hog_pixels_per_cell=(8, 8),
         hog_cells_per_block=(2, 2),
         lbp_points=8,
         lbp_radius=1,
+        glcm_distances=(1,),
+        glcm_angles=(0.0,),
         histogram_bins=8,
-        include_contour_statistics=True,
     )
     first = extract_handcrafted_features(image, config)
     second = extract_handcrafted_features(image, config)
