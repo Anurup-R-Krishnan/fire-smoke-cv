@@ -261,7 +261,13 @@ def _transfer_file(source: Path, destination: Path, mode: str) -> str:
 def materialize_dataset(config: DataPrepConfig, samples: list[Sample]) -> Counter[str]:
     output_dir: Path = config.output["dataset_dir"]
     overwrite = bool(config.output.get("overwrite", False))
-    if output_dir.exists():
+    # Never recurse through a symlink while cleaning an output path. A stale
+    # symlink here can point at the raw dataset and make overwrite destructive.
+    if output_dir.is_symlink():
+        if not overwrite:
+            raise FileExistsError(f"Output dataset exists as a symlink and overwrite=false: {output_dir}")
+        output_dir.unlink()
+    elif output_dir.exists():
         if not overwrite:
             raise FileExistsError(f"Output dataset exists and overwrite=false: {output_dir}")
         shutil.rmtree(output_dir)
